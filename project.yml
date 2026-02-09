@@ -1,0 +1,43 @@
+name: Conductor
+options:
+  bundleIdPrefix: com.conductor
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "16.0"
+  defaultConfig: Debug
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+
+targets:
+  Conductor:
+    type: application
+    platform: macOS
+    sources:
+      - path: Conductor
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.conductor.app
+        INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.developer-tools"
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_ENTITLEMENTS: Conductor/Conductor.entitlements
+    scheme:
+      testTargets:
+        - ConductorTests
+
+  ConductorTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: ConductorTests
+    dependencies:
+      - target: Conductor
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.conductor.app.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Conductor.app/Contents/MacOS/Conductor"
+        BUNDLE_LOADER: "$(TEST_HOST)"
