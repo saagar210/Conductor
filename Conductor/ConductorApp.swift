@@ -6,6 +6,8 @@ import os
 struct ConductorApp: App {
     let modelContainer: ModelContainer
     @State private var appState = AppState()
+    @State private var sessionFingerprints: [String: SessionFingerprint] = [:]
+    @State private var monitorTask: Task<Void, Never>?
 
     private let logger = Logger(subsystem: "com.conductor.app", category: "app")
 
@@ -28,7 +30,10 @@ struct ConductorApp: App {
         WindowGroup {
             ContentView()
                 .environment(appState)
-                .task { await loadSessions() }
+                .task {
+                    await loadSessions()
+                    startMonitoringIfNeeded()
+                }
         }
         .modelContainer(modelContainer)
         .defaultSize(width: 1400, height: 900)
@@ -54,18 +59,24 @@ struct ConductorApp: App {
     private func loadSessions() async {
         let context = modelContainer.mainContext
         let existingCount = (try? context.fetchCount(FetchDescriptor<Session>())) ?? 0
-        guard existingCount == 0 else { return }
+        guard existingCount == 0 else {
+            let discovered = SessionDiscovery.discoverAll()
+            sessionFingerprints = SessionSyncPlanner.fingerprints(from: discovered)
+            return
+        }
 
         await importSessions(into: context)
     }
 
     @MainActor
     private func refreshSessions() async {
+        stopMonitoring()
+
         let context = modelContainer.mainContext
         appState.selectedSessionID = nil
         appState.selectedNodeID = nil
+        sessionFingerprints = [:]
 
-        // Delete all existing data
         try? context.delete(model: ToolCallRecord.self)
         try? context.delete(model: CommandRecord.self)
         try? context.delete(model: AgentNode.self)
@@ -73,12 +84,14 @@ struct ConductorApp: App {
         try? context.save()
 
         await importSessions(into: context)
+        startMonitoringIfNeeded()
     }
 
     @MainActor
     private func importSessions(into context: ModelContext) async {
         let discovered = SessionDiscovery.discoverAll()
         logger.info("Discovered \(discovered.count) sessions")
+        sessionFingerprints = SessionSyncPlanner.fingerprints(from: discovered)
 
         if discovered.isEmpty {
             logger.info("No real sessions found, seeding mock data")
@@ -93,14 +106,93 @@ struct ConductorApp: App {
         }
         try? context.save()
 
-        // Auto-select most recent session
+        selectNewestSession(in: context)
+        logger.info("Imported \(discovered.count) sessions successfully")
+    }
+
+    @MainActor
+    private func startMonitoringIfNeeded() {
+        guard monitorTask == nil else { return }
+
+        monitorTask = Task { @MainActor in
+            while !Task.isCancelled {
+                await syncDiscoveredSessions()
+                try? await Task.sleep(for: .seconds(2))
+            }
+        }
+    }
+
+    @MainActor
+    private func stopMonitoring() {
+        monitorTask?.cancel()
+        monitorTask = nil
+    }
+
+    @MainActor
+    private func syncDiscoveredSessions() async {
+        let context = modelContainer.mainContext
+        let discovered = SessionDiscovery.discoverAll()
+        let plan = SessionSyncPlanner.plan(
+            discovered: discovered,
+            knownFingerprints: sessionFingerprints
+        )
+
+        guard !plan.isEmpty else { return }
+
+        let allSessions = (try? context.fetch(FetchDescriptor<Session>())) ?? []
+
+        // Remove sessions no longer on disk.
+        let sessionsByPath = Dictionary(uniqueKeysWithValues: allSessions.map { ($0.logPath, $0) })
+        for removedPath in plan.removedLogPaths {
+            guard let existing = sessionsByPath[removedPath] else { continue }
+            if existing.id == appState.selectedSessionID {
+                appState.selectedSessionID = nil
+            }
+            context.delete(existing)
+        }
+
+        // If real sessions now exist, remove mock fallback records.
+        if !discovered.isEmpty {
+            let mockSessions = allSessions.filter { $0.logPath.hasPrefix("~/.claude/projects/") }
+            for mock in mockSessions {
+                context.delete(mock)
+            }
+        }
+
+        // Rebuild changed/new sessions.
+        let postDeleteSessions = (try? context.fetch(FetchDescriptor<Session>())) ?? []
+        for discoveredSession in plan.changedSessions {
+            let existing = postDeleteSessions.first(where: { $0.logPath == discoveredSession.logURL.path })
+            let wasSelected = existing?.id == appState.selectedSessionID
+
+            if let existing {
+                context.delete(existing)
+            }
+
+            if let rebuilt = SessionBuilder.build(from: discoveredSession, in: context), wasSelected {
+                appState.selectedSessionID = rebuilt.id
+            }
+        }
+
+        try? context.save()
+
+        if appState.selectedSessionID == nil {
+            selectNewestSession(in: context)
+        }
+
+        sessionFingerprints = SessionSyncPlanner.fingerprints(from: discovered)
+        logger.info(
+            "Live sync updated \(plan.changedSessions.count) changed sessions; removed \(plan.removedLogPaths.count)"
+        )
+    }
+
+    @MainActor
+    private func selectNewestSession(in context: ModelContext) {
         let descriptor = FetchDescriptor<Session>(
             sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
         )
         if let newest = try? context.fetch(descriptor).first {
             appState.selectedSessionID = newest.id
         }
-
-        logger.info("Imported \(discovered.count) sessions successfully")
     }
 }
