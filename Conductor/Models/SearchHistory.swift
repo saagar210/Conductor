@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class SearchHistory: Sendable {
+final class SearchHistory {
     @Attribute(.unique) var id: UUID
     var query: String
     var filterTypeRaw: String  // SearchFilterType as string

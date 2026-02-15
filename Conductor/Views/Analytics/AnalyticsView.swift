@@ -3,7 +3,6 @@ import SwiftData
 
 struct AnalyticsView: View {
     @Environment(AppState.self) private var appState
-    @Environment(\.modelContext) private var modelContext
     @Query(sort: \Session.startedAt, order: .reverse) private var allSessions: [Session]
 
     let session: Session
@@ -187,7 +186,7 @@ struct PerformanceAnalyticsView: View {
                 .fontWeight(.bold)
 
             GroupBox("Node Success Rate") {
-                let analytics = AnalyticsCalculator.calculateSessionAnalytics(for: session, in: modelContext)
+                let analytics = AnalyticsCalculator.calculateSessionAnalytics(for: session)
 
                 VStack(alignment: .leading, spacing: 8) {
                     ProgressView(value: analytics.successRate) {

@@ -93,7 +93,7 @@ struct ModelTests {
         let container = try makeContainer()
         let context = container.mainContext
 
-        var session = Session(name: "Tags Test", slug: "tags-test")
+        let session = Session(name: "Tags Test", slug: "tags-test")
         session.tags = ["swift", "backend", "auth"]
         context.insert(session)
         try context.save()
@@ -111,7 +111,7 @@ struct ModelTests {
         let session = Session(name: "Files Test", slug: "files-test")
         context.insert(session)
 
-        var node = AgentNode(session: session, agentName: "FileNode", depth: 0)
+        let node = AgentNode(session: session, agentName: "FileNode", depth: 0)
         node.filesModified = ["/src/main.ts", "/src/util, special.ts"]
         context.insert(node)
         try context.save()

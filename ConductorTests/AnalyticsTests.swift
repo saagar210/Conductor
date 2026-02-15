@@ -28,7 +28,7 @@ final class AnalyticsTests: XCTestCase {
         let context = createInMemoryContext()
         let session = createMockSessionWithNodes(in: context)
 
-        let analytics = AnalyticsCalculator.calculateSessionAnalytics(for: session, in: context)
+        let analytics = AnalyticsCalculator.calculateSessionAnalytics(for: session)
 
         XCTAssertEqual(analytics.sessionID, session.id)
         XCTAssertEqual(analytics.nodeCount, session.nodes.count)

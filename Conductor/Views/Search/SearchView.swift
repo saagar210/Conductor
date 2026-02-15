@@ -67,7 +67,7 @@ struct SearchView: View {
                     showFilterPanel.toggle()
                 }) {
                     Image(systemName: showFilterPanel ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
-                        .foregroundStyle(appState.searchState.currentFilter == .none ? .secondary : .blue)
+                        .foregroundStyle(appState.searchState.currentFilter == .none ? Color.secondary : Color.blue)
                 }
                 .buttonStyle(.plain)
             }

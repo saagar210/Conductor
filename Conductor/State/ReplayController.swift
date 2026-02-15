@@ -1,15 +1,14 @@
 import Foundation
 import SwiftUI
-import SwiftData
 
-struct ReplayTimeline: Sendable {
+struct ReplayTimeline {
     let sessionID: UUID
     let events: [ReplayEventFrame]
     let totalDuration: Double
     let eventCount: Int
 }
 
-struct ReplayEventFrame: Sendable, Identifiable {
+struct ReplayEventFrame: Identifiable {
     var id: UUID { event.id }
     let event: ReplayEvent
     let relativeTime: Double // 0.0 to 1.0
@@ -29,7 +28,7 @@ final class ReplayController {
 
     // MARK: - Timeline Building
 
-    func buildTimeline(for session: Session, in context: ModelContext) {
+    func buildTimeline(for session: Session) {
         let events = extractEvents(from: session)
         let totalDuration = session.totalDuration
 

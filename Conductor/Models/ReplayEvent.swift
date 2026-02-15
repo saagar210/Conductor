@@ -12,7 +12,7 @@ enum ReplayEventType: String, Codable, Sendable {
 }
 
 @Model
-final class ReplayEvent: Sendable {
+final class ReplayEvent {
     @Attribute(.unique) var id: UUID
     var sessionID: UUID
     var timestamp: Double // Relative to session start (in seconds)

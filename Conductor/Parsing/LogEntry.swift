@@ -30,21 +30,16 @@ struct LogEntry: Codable, Sendable {
 
     var parsedTimestamp: Date? {
         guard let timestamp else { return nil }
-        return LogEntry.dateFormatter.date(from: timestamp)
-            ?? LogEntry.dateFormatterFractional.date(from: timestamp)
+        let standard = ISO8601DateFormatter()
+        standard.formatOptions = [.withInternetDateTime]
+        if let date = standard.date(from: timestamp) {
+            return date
+        }
+
+        let fractional = ISO8601DateFormatter()
+        fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return fractional.date(from: timestamp)
     }
-
-    private static let dateFormatter: ISO8601DateFormatter = {
-        let f = ISO8601DateFormatter()
-        f.formatOptions = [.withInternetDateTime]
-        return f
-    }()
-
-    private static let dateFormatterFractional: ISO8601DateFormatter = {
-        let f = ISO8601DateFormatter()
-        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return f
-    }()
 }
 
 // MARK: - Message

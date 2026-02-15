@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class SessionAnalytics: Sendable {
+final class SessionAnalytics {
     @Attribute(.unique) var id: UUID
     var sessionID: UUID
     var computedAt: Date

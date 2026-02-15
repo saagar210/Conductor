@@ -28,7 +28,7 @@ struct AnyCodable: Codable, Sendable, CustomStringConvertible {
         let container = try decoder.singleValueContainer()
 
         if container.decodeNil() {
-            value = NSNull() as! any Sendable
+            value = NSNull() as any Sendable
         } else if let b = try? container.decode(Bool.self) {
             value = b
         } else if let i = try? container.decode(Int.self) {
@@ -38,11 +38,11 @@ struct AnyCodable: Codable, Sendable, CustomStringConvertible {
         } else if let s = try? container.decode(String.self) {
             value = s
         } else if let arr = try? container.decode([AnyCodable].self) {
-            value = arr.map(\.value) as! any Sendable
+            value = arr.map(\.value)
         } else if let dict = try? container.decode([String: AnyCodable].self) {
-            value = dict.mapValues(\.value) as! any Sendable
+            value = dict.mapValues(\.value)
         } else {
-            value = NSNull() as! any Sendable
+            value = NSNull() as any Sendable
         }
     }
 

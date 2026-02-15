@@ -1,5 +1,4 @@
 import Foundation
-import SwiftData
 
 struct TokenStats: Sendable {
     let totalTokens: Int
@@ -15,14 +14,6 @@ struct ToolPerformance: Sendable, Identifiable {
     let successRate: Double
     let avgDuration: Double
     let failureCount: Int
-}
-
-struct SessionComparison: Sendable {
-    let session1: Session
-    let session2: Session
-    let tokenDifference: Int
-    let durationDifference: Double
-    let nodeDifference: Int
 }
 
 @MainActor
@@ -58,7 +49,7 @@ struct AnalyticsCalculator {
         )
     }
 
-    static func calculateSessionAnalytics(for session: Session, in context: ModelContext) -> SessionAnalytics {
+    static func calculateSessionAnalytics(for session: Session) -> SessionAnalytics {
         let nodeCount = session.nodes.count
         let totalTokens = session.totalTokens
         let avgTokensPerNode = nodeCount > 0 ? totalTokens / nodeCount : 0
@@ -133,51 +124,9 @@ struct AnalyticsCalculator {
         }.sorted { $0.callCount > $1.callCount }
     }
 
-    static func calculateToolMetric(toolName: String, in sessions: [Session], context: ModelContext) -> ToolMetric {
-        var callCount = 0
-        var successCount = 0
-        var totalDuration = 0.0
-        var lastUsed = Date.distantPast
-
-        for session in sessions {
-            for node in session.nodes {
-                if toolName == "Bash" {
-                    for command in node.commandRecords {
-                        callCount += 1
-                        if command.exitCode == 0 {
-                            successCount += 1
-                        }
-                        totalDuration += command.duration
-                        if command.executedAt > lastUsed {
-                            lastUsed = command.executedAt
-                        }
-                    }
-                } else {
-                    for tool in node.toolCallRecords where tool.toolName == toolName {
-                        callCount += 1
-                        if tool.status == .succeeded {
-                            successCount += 1
-                        }
-                        if tool.executedAt > lastUsed {
-                            lastUsed = tool.executedAt
-                        }
-                    }
-                }
-            }
-        }
-
-        return ToolMetric(
-            toolName: toolName,
-            callCount: callCount,
-            successCount: successCount,
-            totalDuration: totalDuration,
-            lastUsed: lastUsed
-        )
-    }
-
     // MARK: - Session Comparison
 
-    static func compareSessionsBy sessions: [Session], sortBy: SessionSortCriteria) -> [Session] {
+    static func compareSessionsBy(sessions: [Session], sortBy: SessionSortCriteria) -> [Session] {
         switch sortBy {
         case .tokens:
             return sessions.sorted { $0.totalTokens > $1.totalTokens }
@@ -188,16 +137,6 @@ struct AnalyticsCalculator {
         case .date:
             return sessions.sorted { $0.startedAt > $1.startedAt }
         }
-    }
-
-    static func compareTwo(_ session1: Session, _ session2: Session) -> SessionComparison {
-        return SessionComparison(
-            session1: session1,
-            session2: session2,
-            tokenDifference: session1.totalTokens - session2.totalTokens,
-            durationDifference: session1.totalDuration - session2.totalDuration,
-            nodeDifference: session1.nodes.count - session2.nodes.count
-        )
     }
 
     // MARK: - Time-based Analytics

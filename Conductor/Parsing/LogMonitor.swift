@@ -10,7 +10,6 @@ final class LogMonitor {
         var fileHandle: FileHandle?
         var lastFileSize: UInt64
         var lastModified: Date
-        var isActive: Bool
     }
 
     // MARK: - Public API
@@ -29,8 +28,7 @@ final class LogMonitor {
         fileHandles[path] = FileMonitorState(
             fileHandle: fileHandle,
             lastFileSize: fileSize,
-            lastModified: modifiedDate,
-            isActive: true
+            lastModified: modifiedDate
         )
 
         logger.info("Started monitoring file: \(path)")
@@ -113,47 +111,6 @@ final class LogMonitor {
         return newLines
     }
 
-    func pollAllMonitoredFiles() -> [String: [String]] {
-        var results: [String: [String]] = [:]
-
-        for path in fileHandles.keys {
-            do {
-                let newLines = try checkForNewEntries(path: path)
-                if !newLines.isEmpty {
-                    results[path] = newLines
-                }
-            } catch {
-                logger.error("Error polling \(path): \(error.localizedDescription)")
-            }
-        }
-
-        return results
-    }
-
-    // MARK: - Incremental Parsing
-
-    func parseNewEntries(from path: String) throws -> [LogEntry] {
-        let newLines = try checkForNewEntries(path: path)
-        guard !newLines.isEmpty else { return [] }
-
-        var entries: [LogEntry] = []
-        for line in newLines {
-            do {
-                let entry = try JSONLParser.parseLine(line)
-                entries.append(entry)
-            } catch {
-                logger.warning("Failed to parse line: \(error.localizedDescription)")
-                continue
-            }
-        }
-
-        return entries
-    }
-
-    func isMonitoring(path: String) -> Bool {
-        return fileHandles[path]?.isActive ?? false
-    }
-
     func monitoredPaths() -> [String] {
         return Array(fileHandles.keys)
     }
@@ -163,7 +120,6 @@ enum LogMonitorError: Error, LocalizedError {
     case fileNotFound(String)
     case notMonitoring(String)
     case invalidFileHandle(String)
-    case permissionDenied(String)
 
     var errorDescription: String? {
         switch self {
@@ -173,8 +129,6 @@ enum LogMonitorError: Error, LocalizedError {
             return "Not monitoring file: \(path)"
         case .invalidFileHandle(let path):
             return "Invalid file handle for: \(path)"
-        case .permissionDenied(let path):
-            return "Permission denied: \(path)"
         }
     }
 }

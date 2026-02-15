@@ -19,7 +19,7 @@ final class ReplayControllerTests: XCTestCase {
         let context = createInMemoryContext()
         let session = createMockSessionForReplay(in: context)
 
-        replayController.buildTimeline(for: session, in: context)
+        replayController.buildTimeline(for: session)
 
         XCTAssertNotNil(replayController.timeline)
         XCTAssertGreaterThan(replayController.timeline!.eventCount, 0)
@@ -37,7 +37,7 @@ final class ReplayControllerTests: XCTestCase {
         let context = createInMemoryContext()
         let session = createMockSessionForReplay(in: context)
 
-        replayController.buildTimeline(for: session, in: context)
+        replayController.buildTimeline(for: session)
 
         // Test play
         replayController.play()
@@ -52,7 +52,7 @@ final class ReplayControllerTests: XCTestCase {
         let context = createInMemoryContext()
         let session = createMockSessionForReplay(in: context)
 
-        replayController.buildTimeline(for: session, in: context)
+        replayController.buildTimeline(for: session)
         replayController.play()
 
         replayController.stop()
@@ -66,7 +66,7 @@ final class ReplayControllerTests: XCTestCase {
         let context = createInMemoryContext()
         let session = createMockSessionForReplay(in: context)
 
-        replayController.buildTimeline(for: session, in: context)
+        replayController.buildTimeline(for: session)
 
         replayController.seek(to: 0.5)
 
@@ -78,7 +78,7 @@ final class ReplayControllerTests: XCTestCase {
         let context = createInMemoryContext()
         let session = createMockSessionForReplay(in: context)
 
-        replayController.buildTimeline(for: session, in: context)
+        replayController.buildTimeline(for: session)
 
         // Test lower bound
         replayController.seek(to: -0.5)
@@ -93,7 +93,7 @@ final class ReplayControllerTests: XCTestCase {
         let context = createInMemoryContext()
         let session = createMockSessionForReplay(in: context)
 
-        replayController.buildTimeline(for: session, in: context)
+        replayController.buildTimeline(for: session)
 
         let initialProgress = replayController.progress
 
@@ -124,7 +124,7 @@ final class ReplayControllerTests: XCTestCase {
         let context = createInMemoryContext()
         let session = createMockSessionForReplay(in: context)
 
-        replayController.buildTimeline(for: session, in: context)
+        replayController.buildTimeline(for: session)
 
         let currentEvent = replayController.currentEvent
         XCTAssertNotNil(currentEvent)
@@ -135,7 +135,7 @@ final class ReplayControllerTests: XCTestCase {
         let context = createInMemoryContext()
         let session = createMockSessionForReplay(in: context)
 
-        replayController.buildTimeline(for: session, in: context)
+        replayController.buildTimeline(for: session)
 
         let formatted = replayController.formattedProgress
         XCTAssertTrue(formatted.contains("/"))
@@ -146,7 +146,7 @@ final class ReplayControllerTests: XCTestCase {
         let context = createInMemoryContext()
         let session = createMockSessionForReplay(in: context)
 
-        replayController.buildTimeline(for: session, in: context)
+        replayController.buildTimeline(for: session)
 
         guard let timeline = replayController.timeline else {
             XCTFail("Timeline not created")

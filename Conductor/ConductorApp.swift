@@ -21,7 +21,6 @@ struct ConductorApp: App {
                 ToolCallRecord.self,
                 SearchHistory.self,
                 SessionAnalytics.self,
-                ToolMetric.self,
                 ReplayEvent.self,
             ])
             let config = ModelConfiguration(isStoredInMemoryOnly: false)
@@ -131,8 +130,6 @@ struct ConductorApp: App {
             }
         }
 
-        appState.isMonitoring = true
-
         monitorTask = Task { @MainActor in
             while !Task.isCancelled {
                 await syncDiscoveredSessions()
@@ -146,7 +143,6 @@ struct ConductorApp: App {
         monitorTask?.cancel()
         monitorTask = nil
         logMonitor.stopAll()
-        appState.isMonitoring = false
         logger.info("Stopped all monitoring")
     }
 
@@ -166,7 +162,6 @@ struct ConductorApp: App {
                 let newLines = try logMonitor.checkForNewEntries(path: path)
                 if !newLines.isEmpty {
                     hasNewEntries = true
-                    appState.newSessionsCount += 1
                     logger.debug("Detected \(newLines.count) new lines in \(path)")
                 }
             } catch {

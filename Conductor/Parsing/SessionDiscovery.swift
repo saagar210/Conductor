@@ -2,7 +2,7 @@ import Foundation
 import os
 
 /// Represents a discovered Claude Code session on disk.
-struct DiscoveredSession: Sendable {
+struct DiscoveredSession: Sendable, Equatable {
     let projectDir: String
     let projectName: String
     let sessionId: String
@@ -15,9 +15,6 @@ struct DiscoveredSession: Sendable {
 /// Scans `~/.claude/projects/` to discover all Claude Code session logs.
 enum SessionDiscovery {
     private static let logger = Logger(subsystem: "com.conductor.app", category: "SessionDiscovery")
-
-    /// UUID pattern: 8-4-4-4-12 hex chars
-    private static let uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
     /// Scan `~/.claude/projects/` and return all discovered sessions, newest first.
     static func discoverAll() -> [DiscoveredSession] {
@@ -58,7 +55,7 @@ enum SessionDiscovery {
                 let stem = file.deletingPathExtension().lastPathComponent
 
                 // Must match UUID pattern (not subagent files like "agent-xxx")
-                guard stem.wholeMatch(of: uuidPattern) != nil else { continue }
+                guard isSessionUUID(stem) else { continue }
 
                 let attrs = try? file.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey])
                 let fileSize = attrs?.fileSize ?? 0
@@ -118,5 +115,12 @@ enum SessionDiscovery {
     private static func isDirectory(_ url: URL) -> Bool {
         var isDir: ObjCBool = false
         return FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir) && isDir.boolValue
+    }
+
+    private static func isSessionUUID(_ value: String) -> Bool {
+        value.range(
+            of: #"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"#,
+            options: .regularExpression
+        ) != nil
     }
 }

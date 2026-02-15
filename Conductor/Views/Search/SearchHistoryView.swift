@@ -2,8 +2,6 @@ import SwiftUI
 import SwiftData
 
 struct SearchHistoryView: View {
-    @Environment(AppState.self) private var appState
-    @Environment(\.modelContext) private var modelContext
     @Query(sort: \SearchHistory.executedAt, order: .reverse) private var recentSearches: [SearchHistory]
 
     let onSelect: (String) -> Void

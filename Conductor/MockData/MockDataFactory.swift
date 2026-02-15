@@ -8,7 +8,7 @@ enum MockDataFactory {
     @MainActor
     static func createMockSessions(in context: ModelContext) -> Session {
         let session1 = createAuthSession(in: context)
-        let session2 = createDockerSession(in: context)
+        _ = createDockerSession(in: context)
 
         logger.info("Created mock data: 2 sessions")
         return session1
@@ -216,7 +216,7 @@ enum MockDataFactory {
             ("Glob", "tests/**/*.test.ts", "Found 12 test files", 140),
         ]
 
-        for (i, (name, input, output, offset)) in tools.enumerated() {
+        for (name, input, output, offset) in tools {
             let record = ToolCallRecord(
                 node: node,
                 toolName: name,

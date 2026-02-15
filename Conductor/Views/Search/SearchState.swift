@@ -20,7 +20,7 @@ enum SearchFilter: Hashable, Sendable {
     case text(String)
 }
 
-struct SearchResult: Sendable, Identifiable {
+struct SearchResult: Identifiable {
     var id: UUID { session.id }
     let session: Session
     let matchedFields: [MatchedField]
@@ -255,19 +255,5 @@ final class SearchState {
         }
 
         try? context.save()
-    }
-
-    func getRecentSearches(from context: ModelContext, limit: Int = 10) -> [SearchHistory] {
-        let descriptor = FetchDescriptor<SearchHistory>(
-            sortBy: [SortDescriptor(\.executedAt, order: .reverse)]
-        )
-        return (try? context.fetch(descriptor).prefix(limit).map { $0 }) ?? []
-    }
-
-    func getPopularSearches(from context: ModelContext, limit: Int = 5) -> [SearchHistory] {
-        let descriptor = FetchDescriptor<SearchHistory>(
-            sortBy: [SortDescriptor(\.frequency, order: .reverse)]
-        )
-        return (try? context.fetch(descriptor).prefix(limit).map { $0 }) ?? []
     }
 }

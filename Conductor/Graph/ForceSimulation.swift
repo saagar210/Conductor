@@ -148,40 +148,4 @@ final class ForceSimulation {
         }
     }
 
-    func addNode(from node: AgentNode) {
-        let parentPos = positions.first(where: { $0.id == node.parent?.id })
-        let x = (parentPos?.x ?? canvasSize.width / 2) + Double.random(in: -30...30)
-        let y = (parentPos?.y ?? canvasSize.height / 2) + Double.random(in: -30...30)
-
-        let newPos = NodePosition(
-            id: node.id,
-            x: x,
-            y: y,
-            vx: 0,
-            vy: 0,
-            depth: node.depth,
-            agentType: node.agentType,
-            status: node.status,
-            parentID: node.parent?.id
-        )
-
-        positions.append(newPos)
-
-        if let parentID = node.parent?.id,
-           let parentIdx = positions.firstIndex(where: { $0.id == parentID }) {
-            let childIdx = positions.count - 1
-            edges.append((parentIdx, childIdx))
-        }
-
-        if !isRunning {
-            isRunning = true
-            simulationTask = Task { [weak self] in
-                guard let self else { return }
-                while !Task.isCancelled && self.isRunning {
-                    self.tick()
-                    try? await Task.sleep(for: .seconds(self.settings.tickInterval))
-                }
-            }
-        }
-    }
 }

@@ -1,8 +1,6 @@
 import SwiftUI
-import SwiftData
 
 struct ReplayView: View {
-    @Environment(\.modelContext) private var modelContext
     let session: Session
     @State private var replayController = ReplayController()
 
@@ -51,7 +49,7 @@ struct ReplayView: View {
             }
         }
         .onAppear {
-            replayController.buildTimeline(for: session, in: modelContext)
+            replayController.buildTimeline(for: session)
         }
         .onKeyPress(.space) {
             // Space: play/pause
@@ -72,19 +70,19 @@ struct ReplayView: View {
             replayController.seekForward()
             return .handled
         }
-        .onKeyPress(characters: "+") {
+        .onKeyPress(characters: CharacterSet(charactersIn: "+")) { _ in
             // +: increase speed
             let newSpeed = min(replayController.speed * 1.25, 4.0)
             replayController.adjustSpeed(newSpeed)
             return .handled
         }
-        .onKeyPress(characters: "-") {
+        .onKeyPress(characters: CharacterSet(charactersIn: "-")) { _ in
             // -: decrease speed
             let newSpeed = max(replayController.speed / 1.25, 0.25)
             replayController.adjustSpeed(newSpeed)
             return .handled
         }
-        .onKeyPress(characters: "r") {
+        .onKeyPress(characters: CharacterSet(charactersIn: "r")) { _ in
             // r: restart from beginning
             replayController.stop()
             return .handled
