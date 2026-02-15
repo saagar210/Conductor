@@ -16,6 +16,8 @@ struct NodeDetailView: View {
                 Text("Files").tag(2)
                 Text("Commands").tag(3)
                 Text("Tools").tag(4)
+                Text("Analytics").tag(5)
+                Text("Replay").tag(6)
             }
             .pickerStyle(.segmented)
             .padding(8)
@@ -28,6 +30,26 @@ struct NodeDetailView: View {
             case 2: FilesTabView(node: node)
             case 3: CommandsTabView(node: node)
             case 4: ToolsTabView(node: node)
+            case 5:
+                if let session = node.session {
+                    AnalyticsView(session: session)
+                } else {
+                    EmptyStateView(
+                        systemImage: "chart.bar",
+                        title: "No Analytics",
+                        subtitle: "Session data not available"
+                    )
+                }
+            case 6:
+                if let session = node.session {
+                    ReplayView(session: session)
+                } else {
+                    EmptyStateView(
+                        systemImage: "film",
+                        title: "No Replay",
+                        subtitle: "Session data not available"
+                    )
+                }
             default: TaskTabView(node: node)
             }
         }

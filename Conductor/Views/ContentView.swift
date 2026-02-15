@@ -10,7 +10,7 @@ struct ContentView: View {
         @Bindable var appState = appState
 
         NavigationSplitView {
-            SessionListView(sessions: sessions, selectedSessionID: $appState.selectedSessionID)
+            SearchView(sessions: sessions, selectedSessionID: $appState.selectedSessionID)
                 .navigationSplitViewColumnWidth(
                     min: ConductorTheme.sidebarMinWidth,
                     ideal: ConductorTheme.sidebarIdealWidth,
@@ -18,15 +18,30 @@ struct ContentView: View {
                 )
         } content: {
             if let session = selectedSession {
-                VStack(spacing: 0) {
-                    GraphCanvasView(
-                        positions: appState.simulation.positions,
-                        selectedNodeID: appState.selectedNodeID,
-                        onNodeTapped: { id in appState.selectedNodeID = id }
-                    )
-                    Divider()
-                    StatsBarView(session: session)
-                        .frame(height: 50)
+                GeometryReader { geometry in
+                    VStack(spacing: 0) {
+                        GraphCanvasView(
+                            positions: appState.simulation.positions,
+                            selectedNodeID: appState.selectedNodeID,
+                            onNodeTapped: { id in appState.selectedNodeID = id }
+                        )
+                        Divider()
+                        StatsBarView(session: session)
+                            .frame(height: 50)
+                    }
+                    .onAppear {
+                        let canvasHeight = max(geometry.size.height - 50, 100)
+                        appState.canvasSize = CGSize(width: geometry.size.width, height: canvasHeight)
+                    }
+                    .onChange(of: geometry.size) { _, newSize in
+                        let canvasHeight = max(newSize.height - 50, 100)
+                        let newCanvasSize = CGSize(width: newSize.width, height: canvasHeight)
+                        appState.canvasSize = newCanvasSize
+                        // Reload nodes with new canvas size
+                        if let session = selectedSession {
+                            appState.simulation.loadNodes(from: session.nodes, canvasSize: newCanvasSize)
+                        }
+                    }
                 }
             } else {
                 EmptyStateView(
@@ -50,7 +65,7 @@ struct ContentView: View {
             if let session = sessions.first(where: { $0.id == newID }) {
                 appState.simulation.loadNodes(
                     from: session.nodes,
-                    canvasSize: CGSize(width: 800, height: 600)
+                    canvasSize: appState.canvasSize
                 )
             }
         }

@@ -8,6 +8,7 @@ struct ConductorApp: App {
     @State private var appState = AppState()
     @State private var sessionFingerprints: [String: SessionFingerprint] = [:]
     @State private var monitorTask: Task<Void, Never>?
+    @State private var logMonitor = LogMonitor()
 
     private let logger = Logger(subsystem: "com.conductor.app", category: "app")
 
@@ -18,6 +19,10 @@ struct ConductorApp: App {
                 AgentNode.self,
                 CommandRecord.self,
                 ToolCallRecord.self,
+                SearchHistory.self,
+                SessionAnalytics.self,
+                ToolMetric.self,
+                ReplayEvent.self,
             ])
             let config = ModelConfiguration(isStoredInMemoryOnly: false)
             modelContainer = try ModelContainer(for: schema, configurations: [config])
@@ -114,6 +119,20 @@ struct ConductorApp: App {
     private func startMonitoringIfNeeded() {
         guard monitorTask == nil else { return }
 
+        // Set up log monitors for discovered sessions
+        let discovered = SessionDiscovery.discoverAll()
+        for session in discovered {
+            let logPath = session.logURL.path
+            do {
+                try logMonitor.startMonitoring(path: logPath)
+                logger.info("Started monitoring: \(logPath)")
+            } catch {
+                logger.error("Failed to monitor \(logPath): \(error.localizedDescription)")
+            }
+        }
+
+        appState.isMonitoring = true
+
         monitorTask = Task { @MainActor in
             while !Task.isCancelled {
                 await syncDiscoveredSessions()
@@ -126,6 +145,9 @@ struct ConductorApp: App {
     private func stopMonitoring() {
         monitorTask?.cancel()
         monitorTask = nil
+        logMonitor.stopAll()
+        appState.isMonitoring = false
+        logger.info("Stopped all monitoring")
     }
 
     @MainActor
@@ -137,7 +159,22 @@ struct ConductorApp: App {
             knownFingerprints: sessionFingerprints
         )
 
-        guard !plan.isEmpty else { return }
+        // Check for new entries in monitored files
+        var hasNewEntries = false
+        for path in logMonitor.monitoredPaths() {
+            do {
+                let newLines = try logMonitor.checkForNewEntries(path: path)
+                if !newLines.isEmpty {
+                    hasNewEntries = true
+                    appState.newSessionsCount += 1
+                    logger.debug("Detected \(newLines.count) new lines in \(path)")
+                }
+            } catch {
+                logger.error("Error checking \(path): \(error.localizedDescription)")
+            }
+        }
+
+        guard !plan.isEmpty || hasNewEntries else { return }
 
         let allSessions = (try? context.fetch(FetchDescriptor<Session>())) ?? []
 
