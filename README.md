@@ -72,6 +72,76 @@ open Conductor.xcodeproj
 
 > **Note:** This project requires Xcode.app to build (not just CommandLineTools) due to SwiftData macro expansion requirements. Command-line builds via `swift build` are not supported.
 
+## Development Modes
+
+### Normal Dev
+
+Use the standard workflow from this README:
+
+```bash
+xcodegen generate
+open Conductor.xcodeproj
+# Then press ⌘R in Xcode
+```
+
+This keeps default Xcode behavior and caches in `~/Library/Developer/Xcode/DerivedData`.
+
+### Lean Dev (low disk)
+
+Use the lean wrapper script:
+
+```bash
+./scripts/run-lean-dev.sh
+```
+
+What this does:
+- Builds with a temporary `DerivedData` path
+- Uses a temporary cloned Swift package path
+- Launches the app
+- Automatically deletes those heavy artifacts when the app exits
+
+Helpful environment flags:
+- `LEAN_BUILD_ONLY=1 ./scripts/run-lean-dev.sh` builds with temporary caches but skips launch
+- `LEAN_KEEP_TEMP=1 ./scripts/run-lean-dev.sh` keeps temp artifacts for debugging
+
+Tradeoff:
+- Lower disk usage over time
+- Slightly slower startup/build compared to reusing long-lived build caches
+
+## Cleanup Commands
+
+Use these when you want explicit cleanup outside lean mode.
+
+### Targeted cleanup (heavy build artifacts only)
+
+```bash
+./scripts/clean-heavy-build-artifacts.sh
+```
+
+Removes only heavy build artifacts:
+- Repo-local `build/`, `.build/`, `DerivedData/` (if present)
+- Project-specific Xcode `~/Library/Developer/Xcode/DerivedData/Conductor-*`
+
+### Full local reproducible cleanup
+
+```bash
+./scripts/clean-local-reproducible-caches.sh
+```
+
+Includes targeted cleanup plus reproducible local IDE/cache state:
+- `.swiftpm/`
+- `Conductor.xcodeproj/xcuserdata/`
+- `Conductor.xcodeproj/project.xcworkspace/xcuserdata/`
+- `*.xcuserstate` files under the repo
+
+### Disk usage report
+
+```bash
+./scripts/report-dev-disk-usage.sh
+```
+
+Shows the main folders that can grow during development so you can compare before/after cleanup.
+
 ## Usage
 
 1. **Launch the app** — Conductor auto-discovers Claude Code sessions from `~/.claude/projects/`
